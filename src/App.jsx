@@ -96,46 +96,103 @@ const ResultAlert = ({ result, preview, onClose }) => {
   );
 };
 
-// Login Modal
+// Login Modal - Modern Style
 const LoginModal = ({ onLogin }) => {
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
 
-  const handleLogin = () => {
+  const handleLogin = async (e) => {
+    e.preventDefault();
     if (!username || !password) return;
+    
+    setIsLoading(true);
+    // Simulate API call delay
+    await new Promise(resolve => setTimeout(resolve, 800));
+    
     localStorage.setItem("aiUser", JSON.stringify({ username, password }));
     onLogin(username);
+    setIsLoading(false);
   };
 
   return (
-    <div className="fixed inset-0 z-50 bg-black/60 flex items-center justify-center">
-      <div className="bg-slate-900 rounded-xl shadow-2xl p-8 w-96 text-center">
-        <h2 className="text-white text-2xl font-bold mb-6">Login</h2>
-        <input
-          className="w-full mb-4 p-3 rounded-lg text-black"
-          type="text"
-          placeholder="Username"
-          value={username}
-          onChange={(e) => setUsername(e.target.value)}
-        />
-        <input
-          className="w-full mb-6 p-3 rounded-lg text-black"
-          type="password"
-          placeholder="Password"
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
-        />
-        <button
-          onClick={handleLogin}
-          className="bg-indigo-600 hover:bg-indigo-500 text-white px-6 py-3 rounded-lg font-bold w-full"
-        >
-          Login
-        </button>
+    <div className="fixed inset-0 z-50 bg-black/70 backdrop-blur-xl flex items-center justify-center p-4 animate-fadeIn">
+      <div className="bg-slate-900 border border-white/10 rounded-2xl shadow-2xl max-w-md w-full overflow-hidden animate-scaleIn">
+        {/* Header */}
+        <div className="p-6 border-b border-white/10 bg-gradient-to-r from-indigo-900/20 to-purple-900/20">
+          <div className="flex items-center justify-center gap-3 mb-2">
+            <div className="w-10 h-10 rounded-xl bg-gradient-to-r from-indigo-500 to-purple-500 flex items-center justify-center shadow-lg">
+              <ScanEye size={22} className="text-white" />
+            </div>
+            <h2 className="text-2xl font-bold text-white">Welcome Back</h2>
+          </div>
+          <p className="text-slate-400 text-center text-sm">Sign in to analyze images</p>
+        </div>
+
+        {/* Form */}
+        <form onSubmit={handleLogin} className="p-6 space-y-4">
+          <div className="space-y-2">
+            <label className="text-slate-300 text-sm font-medium block">Username</label>
+            <div className="relative">
+              <input
+                className="w-full bg-slate-800/70 border border-slate-600 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 rounded-xl px-4 py-3.5 text-white placeholder-slate-500 transition-all duration-200 outline-none"
+                type="text"
+                placeholder="Enter your username"
+                value={username}
+                onChange={(e) => setUsername(e.target.value)}
+                required
+              />
+            </div>
+          </div>
+
+          <div className="space-y-2">
+            <label className="text-slate-300 text-sm font-medium block">Password</label>
+            <div className="relative">
+              <input
+                className="w-full bg-slate-800/70 border border-slate-600 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 rounded-xl px-4 py-3.5 text-white placeholder-slate-500 transition-all duration-200 outline-none"
+                type="password"
+                placeholder="Enter your password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                required
+              />
+            </div>
+          </div>
+
+          <button
+            type="submit"
+            disabled={isLoading || !username || !password}
+            className={cn(
+              "w-full py-3.5 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-white font-bold rounded-xl shadow-lg transition-all duration-200 flex items-center justify-center gap-2",
+              (isLoading || !username || !password) 
+                ? "opacity-50 cursor-not-allowed" 
+                : "hover:shadow-purple-500/30 hover:scale-[1.02] active:scale-[0.98]"
+            )}
+          >
+            {isLoading ? (
+              <>
+                <Loader2 size={20} className="animate-spin" />
+                Signing In...
+              </>
+            ) : (
+              <>
+                <CheckCircle2 size={20} />
+                Sign In
+              </>
+            )}
+          </button>
+        </form>
+
+        {/* Footer */}
+        <div className="px-6 py-4 border-t border-white/10 bg-slate-900/50">
+          <p className="text-slate-500 text-xs text-center">
+            Secure authentication • Your privacy matters
+          </p>
+        </div>
       </div>
     </div>
   );
 };
-
 function App() {
   const [file, setFile] = useState(null);
   const [preview, setPreview] = useState(null);
