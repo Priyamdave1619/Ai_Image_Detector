@@ -25,27 +25,26 @@ const Toast = ({ message, onClose }) => (
 const ResultAlert = ({ result, preview, onClose }) => {
   const isFake = result.prediction === "AI Generated";
   const isReal = result.prediction === "Real";
-  const isOther = result.prediction === "Other Image"; // NEW
+  const isOther = result.prediction === "Other Image";
 
-  // Dynamic color classes
   const statusColor = isFake
     ? "text-red-400"
     : isReal
     ? "text-emerald-400"
-    : "text-yellow-400"; // NEW
+    : "text-yellow-400";
 
   const barColor = isFake
     ? "bg-red-500"
     : isReal
     ? "bg-emerald-500"
-    : "bg-yellow-500"; // NEW
+    : "bg-yellow-500";
 
   const icon = isFake ? (
     <AlertTriangle size={26} className="text-red-400" />
   ) : isReal ? (
     <CheckCircle2 size={26} className="text-emerald-400" />
   ) : (
-    <AlertCircle size={26} className="text-yellow-400" /> // NEW
+    <AlertCircle size={26} className="text-yellow-400" />
   );
 
   return (
@@ -53,7 +52,6 @@ const ResultAlert = ({ result, preview, onClose }) => {
 
       <div className="bg-slate-900 border border-white/10 rounded-2xl shadow-2xl max-w-md w-full overflow-hidden animate-scaleIn">
 
-        {/* Header */}
         <div className="p-4 border-b border-white/10 bg-gradient-to-r from-indigo-900/20 to-purple-900/20 flex justify-center">
           <h3 className="text-lg font-bold text-white flex items-center gap-3">
             <ScanEye size={22} className="text-indigo-400" />
@@ -62,29 +60,19 @@ const ResultAlert = ({ result, preview, onClose }) => {
         </div>
 
         <div className="p-4 space-y-4">
-
-          {/* Original Image */}
           <div className="text-center">
             <p className="text-slate-400 text-[10px] font-medium mb-1">Original</p>
             <div className="rounded-lg overflow-hidden border border-slate-700 shadow-md mx-auto w-40 h-40">
-              <img
-                src={preview}
-                alt="Original"
-                className="w-full h-full object-cover"
-              />
+              <img src={preview} alt="Original" className="w-full h-full object-cover" />
             </div>
           </div>
 
-          {/* Confidence Box */}
           <div className="bg-slate-800/70 rounded-xl p-4 border border-slate-700">
             <div className="flex items-center justify-between mb-2">
-
               <div className="flex items-center gap-2">
                 {icon}
                 <div>
-                  <h4 className={cn("text-lg font-bold", statusColor)}>
-                    {result.prediction}
-                  </h4>
+                  <h4 className={cn("text-lg font-bold", statusColor)}>{result.prediction}</h4>
                   <p className="text-slate-400 text-xs">Confidence</p>
                 </div>
               </div>
@@ -95,14 +83,10 @@ const ResultAlert = ({ result, preview, onClose }) => {
             </div>
 
             <div className="w-full h-2.5 bg-slate-700 rounded-full overflow-hidden">
-              <div
-                className={cn("h-full transition-all duration-1000 ease-out rounded-full", barColor)}
-                style={{ width: result.confidence }}
-              />
+              <div className={cn("h-full transition-all duration-1000 ease-out rounded-full", barColor)} style={{ width: result.confidence }} />
             </div>
           </div>
 
-          {/* Button */}
           <button
             onClick={onClose}
             className="w-full py-2.5 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-white font-bold rounded-lg shadow-lg transition-all hover:shadow-purple-500/50 text-sm"
@@ -141,20 +125,44 @@ function App() {
     }
   };
 
+  // ⭐⭐⭐ FULL ERROR HANDLING INCLUDING NO INTERNET ⭐⭐⭐
   const handleAnalyze = async () => {
     if (!file) {
       showToast("No image uploaded! Please select an image first.");
       return;
     }
+
+    // Check for internet connectivity
+    if (!navigator.onLine) {
+      showToast("No Internet Connectivity!");
+      return;
+    }
+
     setLoading(true);
+
     const formData = new FormData();
-    formData.append('file', file);
+    formData.append("file", file);
 
     try {
-      const res = await axios.post('https://priyam980-ai-detector-backend.hf.space/predict', formData);
+      const res = await axios.post(
+        "https://priyam980-ai-detector-backend.hf.space/predict",
+        formData,
+        { timeout: 8000 }
+      );
       setResult(res.data);
+
     } catch (err) {
-      showToast("Server error! Is your backend running?");
+      if (err.message === "Network Error" || err.code === "ERR_NETWORK") {
+        showToast("No Internet Connectivity!");
+      } else if (err.code === "ECONNABORTED") {
+        showToast("Server not responding! Please try after some time.");
+      } else if (!err.response) {
+        showToast("Unable to connect! Backend may be down.");
+      } else if (err.response.status >= 500) {
+        showToast("Server error! Please try again later.");
+      } else {
+        showToast("Something went wrong! Try again.");
+      }
     } finally {
       setLoading(false);
     }
@@ -198,7 +206,6 @@ function App() {
               <p className="text-slate-400 text-sm mt-2">Detect AI-generated images instantly</p>
             </div>
 
-            {/* Upload Area */}
             {!preview ? (
               <div
                 className={cn(
@@ -252,12 +259,11 @@ function App() {
             )}
           </div>
 
-         <div className="px-8 py-5 border-t border-white/10 bg-slate-900/80 text-center">
-  <p className="text-white text-sm font-semibold tracking-wide drop-shadow-[0_0_6px_rgba(255,255,255,0.3)]">
-    Develop By Priyam Dave
-  </p>
-</div>
-
+          <div className="px-8 py-5 border-t border-white/10 bg-slate-900/80 text-center">
+            <p className="text-white text-sm font-semibold tracking-wide drop-shadow-[0_0_6px_rgba(255,255,255,0.3)]">
+              Develop By Priyam Dave
+            </p>
+          </div>
 
         </div>
       </div>
