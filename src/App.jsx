@@ -1,8 +1,8 @@
-import { useState, useRef } from 'react';
-import axios from 'axios';
-import { Upload, X, ScanEye, CheckCircle2, AlertTriangle, Loader2, AlertCircle } from 'lucide-react';
-import { clsx } from 'clsx';
-import { twMerge } from 'tailwind-merge';
+import { useState, useRef, useEffect } from "react";
+import axios from "axios";
+import { Upload, X, ScanEye, CheckCircle2, AlertTriangle, Loader2, AlertCircle, LogOut } from "lucide-react";
+import { clsx } from "clsx";
+import { twMerge } from "tailwind-merge";
 
 function cn(...inputs) {
   return twMerge(clsx(inputs));
@@ -21,7 +21,7 @@ const Toast = ({ message, onClose }) => (
   </div>
 );
 
-// RESULT ALERT WITH YELLOW SUPPORT
+// Result Alert
 const ResultAlert = ({ result, preview, onClose }) => {
   const isFake = result.prediction === "AI Generated";
   const isReal = result.prediction === "Real";
@@ -49,9 +49,7 @@ const ResultAlert = ({ result, preview, onClose }) => {
 
   return (
     <div className="fixed inset-0 bg-black/70 backdrop-blur-md z-50 flex items-center justify-center p-4 animate-fadeIn">
-
       <div className="bg-slate-900 border border-white/10 rounded-2xl shadow-2xl max-w-md w-full overflow-hidden animate-scaleIn">
-
         <div className="p-4 border-b border-white/10 bg-gradient-to-r from-indigo-900/20 to-purple-900/20 flex justify-center">
           <h3 className="text-lg font-bold text-white flex items-center gap-3">
             <ScanEye size={22} className="text-indigo-400" />
@@ -76,7 +74,6 @@ const ResultAlert = ({ result, preview, onClose }) => {
                   <p className="text-slate-400 text-xs">Confidence</p>
                 </div>
               </div>
-
               <span className="text-xl font-bold text-white font-mono bg-slate-700/80 px-3 py-1 rounded-md">
                 {result.confidence}
               </span>
@@ -99,6 +96,45 @@ const ResultAlert = ({ result, preview, onClose }) => {
   );
 };
 
+// Login Modal
+const LoginModal = ({ onLogin }) => {
+  const [username, setUsername] = useState("");
+  const [password, setPassword] = useState("");
+
+  const handleLogin = () => {
+    if (!username || !password) return;
+    localStorage.setItem("aiUser", JSON.stringify({ username, password }));
+    onLogin(username);
+  };
+
+  return (
+    <div className="fixed inset-0 z-50 bg-black/60 flex items-center justify-center">
+      <div className="bg-slate-900 rounded-xl shadow-2xl p-8 w-96 text-center">
+        <h2 className="text-white text-2xl font-bold mb-6">Login</h2>
+        <input
+          className="w-full mb-4 p-3 rounded-lg text-black"
+          type="text"
+          placeholder="Username"
+          value={username}
+          onChange={(e) => setUsername(e.target.value)}
+        />
+        <input
+          className="w-full mb-6 p-3 rounded-lg text-black"
+          type="password"
+          placeholder="Password"
+          value={password}
+          onChange={(e) => setPassword(e.target.value)}
+        />
+        <button
+          onClick={handleLogin}
+          className="bg-indigo-600 hover:bg-indigo-500 text-white px-6 py-3 rounded-lg font-bold w-full"
+        >
+          Login
+        </button>
+      </div>
+    </div>
+  );
+};
 
 function App() {
   const [file, setFile] = useState(null);
@@ -107,7 +143,13 @@ function App() {
   const [result, setResult] = useState(null);
   const [dragActive, setDragActive] = useState(false);
   const [toast, setToast] = useState(null);
+  const [user, setUser] = useState(null); // Logged-in user
   const fileInputRef = useRef(null);
+
+  useEffect(() => {
+    const savedUser = JSON.parse(localStorage.getItem("aiUser"));
+    if (savedUser) setUser(savedUser.username);
+  }, []);
 
   const showToast = (msg) => {
     setToast(msg);
@@ -115,8 +157,12 @@ function App() {
   };
 
   const handleFile = (selectedFile) => {
+    if (!user) {
+      showToast("Please login first!");
+      return;
+    }
     if (!selectedFile) return;
-    if (selectedFile.type.startsWith('image/')) {
+    if (selectedFile.type.startsWith("image/")) {
       setFile(selectedFile);
       setPreview(URL.createObjectURL(selectedFile));
       setResult(null);
@@ -125,21 +171,18 @@ function App() {
     }
   };
 
-  // ⭐⭐⭐ FULL ERROR HANDLING INCLUDING NO INTERNET ⭐⭐⭐
+  // Same handleAnalyze with internet & backend checks
   const handleAnalyze = async () => {
     if (!file) {
       showToast("No image uploaded! Please select an image first.");
       return;
     }
-
-    // Check for internet connectivity
     if (!navigator.onLine) {
       showToast("No Internet Connectivity!");
       return;
     }
 
     setLoading(true);
-
     const formData = new FormData();
     formData.append("file", file);
 
@@ -150,7 +193,6 @@ function App() {
         { timeout: 8000 }
       );
       setResult(res.data);
-
     } catch (err) {
       if (err.message === "Network Error" || err.code === "ERR_NETWORK") {
         showToast("No Internet Connectivity!");
@@ -175,6 +217,14 @@ function App() {
     if (fileInputRef.current) fileInputRef.current.value = "";
   };
 
+  const handleLogout = () => {
+    localStorage.removeItem("aiUser");
+    setUser(null);
+    setFile(null);
+    setPreview(null);
+    setResult(null);
+  };
+
   return (
     <>
       <style jsx>{`
@@ -186,9 +236,19 @@ function App() {
         .animate-scaleIn { animation: scaleIn 0.4s ease-out; }
       `}</style>
 
-      <div className="min-h-screen w-full bg-slate-950 flex items-center justify-center p-4">
-
+      <div className="min-h-screen w-full bg-slate-950 flex flex-col items-center p-4">
         {toast && <Toast message={toast} onClose={() => setToast(null)} />}
+
+        {!user && <LoginModal onLogin={setUser} />}
+
+        {user && (
+          <div className="w-full max-w-lg flex justify-between items-center mb-4 p-2 bg-slate-900/50 rounded-xl text-white text-lg font-bold">
+            <span className="mx-auto">Welcome, {user}</span>
+            <button onClick={handleLogout} className="flex items-center gap-1 px-3 py-1 bg-red-600 rounded-lg hover:bg-red-500">
+              <LogOut size={18} /> Logout
+            </button>
+          </div>
+        )}
 
         {result && <ResultAlert result={result} preview={preview} onClose={clearImage} />}
 
