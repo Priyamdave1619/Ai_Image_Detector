@@ -109,7 +109,7 @@ const LoginModal = ({ onLogin }) => {
     setIsLoading(true);
     await new Promise(resolve => setTimeout(resolve, 800));
 
-    localStorage.setItem("aiUser", JSON.stringify({ username, password }));
+    localStorage.setItem("aiUser", JSON.stringify({ username}));
     onLogin(username);
     setIsLoading(false);
   };
